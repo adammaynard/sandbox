@@ -35,18 +35,21 @@ function App() {
   ]);
 
   const handleAddRider = (name) => {
-    if (!riders.includes(name)) {
-      setRiders([...riders, name]);
-    }
+    setRiders((prevRiders) => {
+      if (!prevRiders.includes(name)) {
+        return [...prevRiders, name];
+      }
+      return prevRiders;
+    });
   };
 
   const handleRemoveRider = (name) => {
     // Remove from riders list
-    setRiders(riders.filter((r) => r !== name));
+    setRiders((prevRiders) => prevRiders.filter((r) => r !== name));
 
     // Remove from both buses
-    setBus1(removeRiderFromBus(bus1, name));
-    setBus2(removeRiderFromBus(bus2, name));
+    setBus1((prevBus) => removeRiderFromBus(prevBus, name));
+    setBus2((prevBus) => removeRiderFromBus(prevBus, name));
   };
 
   const removeRiderFromBus = (bus, riderName) => {
@@ -58,30 +61,47 @@ function App() {
   };
 
   const handleDrop = (riderName, busId, rowIndex, benchIndex, seatIndex) => {
-    const setBus = busId === 1 ? setBus1 : setBus2;
-    const currentBus = busId === 1 ? bus1 : bus2;
+    // Update bus 1
+    setBus1((prevBus1) => {
+      // Check if target seat is on bus 1 and is occupied
+      if (busId === 1 && prevBus1[rowIndex][benchIndex][seatIndex]) {
+        return prevBus1; // Seat occupied, no change
+      }
 
-    // Check if seat is already occupied
-    if (currentBus[rowIndex][benchIndex][seatIndex]) {
-      return;
-    }
+      // Remove rider from bus 1 (if they're already seated there)
+      const cleaned = removeRiderFromBus(prevBus1, riderName);
 
-    // Remove rider from both buses first
-    const cleanedBus1 = removeRiderFromBus(bus1, riderName);
-    const cleanedBus2 = removeRiderFromBus(bus2, riderName);
+      // If dropping on bus 1, add rider to the target seat
+      if (busId === 1) {
+        const updated = cleaned.map(row => row.map(bench => [...bench]));
+        updated[rowIndex][benchIndex][seatIndex] = riderName;
+        return updated;
+      }
 
-    // Place rider in the new seat
-    const updatedBus = busId === 1 ? [...cleanedBus1] : [...cleanedBus2];
-    updatedBus[rowIndex] = [...updatedBus[rowIndex]];
-    updatedBus[rowIndex][benchIndex] = [...updatedBus[rowIndex][benchIndex]];
-    updatedBus[rowIndex][benchIndex][seatIndex] = riderName;
+      return cleaned;
+    });
 
-    // Update both buses
-    setBus1(busId === 1 ? updatedBus : cleanedBus1);
-    setBus2(busId === 2 ? updatedBus : cleanedBus2);
+    // Update bus 2
+    setBus2((prevBus2) => {
+      // Check if target seat is on bus 2 and is occupied
+      if (busId === 2 && prevBus2[rowIndex][benchIndex][seatIndex]) {
+        return prevBus2; // Seat occupied, no change
+      }
 
-    // Remove from available riders list
-    setRiders(riders.filter((r) => r !== riderName));
+      // Remove rider from bus 2 (if they're already seated there)
+      const cleaned = removeRiderFromBus(prevBus2, riderName);
+
+      // If dropping on bus 2, add rider to the target seat
+      if (busId === 2) {
+        const updated = cleaned.map(row => row.map(bench => [...bench]));
+        updated[rowIndex][benchIndex][seatIndex] = riderName;
+        return updated;
+      }
+
+      return cleaned;
+    });
+
+    // Riders stay in the list even when assigned to seats
   };
 
   const countAvailableSeats = (bus) => {

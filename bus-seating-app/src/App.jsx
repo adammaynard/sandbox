@@ -217,7 +217,10 @@ function App() {
     <DndProvider backend={HTML5Backend}>
       <div className="app">
         <div className="no-print">
-          <h1>Bus Seating Manager</h1>
+          <div className="header">
+            <img src="/bus-logo.svg" alt="Bus Logo" className="app-logo" />
+            <h1>Bus Seating Manager</h1>
+          </div>
           <div className="controls">
             <button className="control-btn save-btn" onClick={handleSaveState}>
               💾 Save to Browser

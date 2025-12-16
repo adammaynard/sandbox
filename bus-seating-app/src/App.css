@@ -28,6 +28,57 @@
   justify-content: center;
 }
 
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.control-btn {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.control-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.save-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.save-btn:hover {
+  background-color: #45a049;
+}
+
+.load-btn {
+  background-color: #2196F3;
+  color: white;
+}
+
+.load-btn:hover {
+  background-color: #0b7dda;
+}
+
+.print-btn {
+  background-color: #FF9800;
+  color: white;
+}
+
+.print-btn:hover {
+  background-color: #e68900;
+}
+
 @media (max-width: 768px) {
   .main-container {
     flex-direction: column;
@@ -36,5 +87,17 @@
 
   .buses-container {
     flex-direction: column;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .app {
+    background: white !important;
+    padding: 0 !important;
   }
 }

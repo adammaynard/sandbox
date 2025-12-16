@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import Bus from './components/Bus';
 import RidersList from './components/RidersList';
+import PrintView from './components/PrintView';
 import './App.css';
 
 const ROWS_PER_BUS = 14;
@@ -119,6 +120,34 @@ function App() {
     setBus2((prevBus) => removeRiderFromBus(prevBus, riderName));
   };
 
+  const handleSaveState = () => {
+    const state = {
+      riders,
+      bus1,
+      bus2,
+      timestamp: new Date().toISOString(),
+    };
+    localStorage.setItem('busSeatingState', JSON.stringify(state));
+    alert('Seating arrangement saved successfully!');
+  };
+
+  const handleLoadState = () => {
+    const savedState = localStorage.getItem('busSeatingState');
+    if (savedState) {
+      const state = JSON.parse(savedState);
+      setRiders(state.riders);
+      setBus1(state.bus1);
+      setBus2(state.bus2);
+      alert(`Seating arrangement loaded from ${new Date(state.timestamp).toLocaleString()}`);
+    } else {
+      alert('No saved state found!');
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   const countAvailableSeats = (bus) => {
     let count = 0;
     bus.forEach((row) => {
@@ -137,31 +166,45 @@ function App() {
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="app">
-        <h1>Bus Seating Manager</h1>
-        <div className="main-container">
-          <RidersList
-            riders={riders}
-            onAddRider={handleAddRider}
-            onRemoveRider={handleRemoveRider}
-            onReturnRider={handleReturnRider}
-          />
-          <div className="buses-container">
-            <Bus
-              busId={1}
-              rows={bus1}
-              onDrop={handleDrop}
-              availableSeats={bus1Available}
-              totalSeats={TOTAL_SEATS_PER_BUS}
+        <div className="no-print">
+          <h1>Bus Seating Manager</h1>
+          <div className="controls">
+            <button className="control-btn save-btn" onClick={handleSaveState}>
+              💾 Save State
+            </button>
+            <button className="control-btn load-btn" onClick={handleLoadState}>
+              📂 Load State
+            </button>
+            <button className="control-btn print-btn" onClick={handlePrint}>
+              🖨️ Print Seating Chart
+            </button>
+          </div>
+          <div className="main-container">
+            <RidersList
+              riders={riders}
+              onAddRider={handleAddRider}
+              onRemoveRider={handleRemoveRider}
+              onReturnRider={handleReturnRider}
             />
-            <Bus
-              busId={2}
-              rows={bus2}
-              onDrop={handleDrop}
-              availableSeats={bus2Available}
-              totalSeats={TOTAL_SEATS_PER_BUS}
-            />
+            <div className="buses-container">
+              <Bus
+                busId={1}
+                rows={bus1}
+                onDrop={handleDrop}
+                availableSeats={bus1Available}
+                totalSeats={TOTAL_SEATS_PER_BUS}
+              />
+              <Bus
+                busId={2}
+                rows={bus2}
+                onDrop={handleDrop}
+                availableSeats={bus2Available}
+                totalSeats={TOTAL_SEATS_PER_BUS}
+              />
+            </div>
           </div>
         </div>
+        <PrintView bus1={bus1} bus2={bus2} />
       </div>
     </DndProvider>
   );

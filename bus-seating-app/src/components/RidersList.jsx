@@ -81,6 +81,7 @@ const RidersList = ({ riders, onAddRider, onRemoveRider, onReturnRider }) => {
       className={`riders-list-container ${isOver ? 'drop-zone-active' : ''}`}
     >
       <h3>Bus Riders</h3>
+      <div className="rider-count">Total: {riders.length}</div>
       <form onSubmit={handleSubmit} className="add-rider-form">
         <input
           type="text"

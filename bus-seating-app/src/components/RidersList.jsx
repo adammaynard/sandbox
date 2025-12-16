@@ -52,6 +52,29 @@ const RidersList = ({ riders, onAddRider, onRemoveRider, onReturnRider }) => {
     }
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target.result;
+      const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
+
+      lines.forEach((line) => {
+        const name = line.trim();
+        if (name) {
+          onAddRider(name);
+        }
+      });
+
+      // Reset the file input so the same file can be uploaded again if needed
+      e.target.value = '';
+    };
+
+    reader.readAsText(file);
+  };
+
   return (
     <div
       ref={drop}
@@ -70,6 +93,18 @@ const RidersList = ({ riders, onAddRider, onRemoveRider, onReturnRider }) => {
           Add Rider
         </button>
       </form>
+      <div className="file-upload-section">
+        <label htmlFor="file-upload" className="file-upload-label">
+          📄 Upload Rider List
+        </label>
+        <input
+          id="file-upload"
+          type="file"
+          accept=".txt"
+          onChange={handleFileUpload}
+          className="file-upload-input"
+        />
+      </div>
       <div className="riders-list">
         {riders.length === 0 ? (
           <p className="empty-message">No riders yet. Add some above!</p>

@@ -1,4 +1,5 @@
 import { useDrop, useDrag } from 'react-dnd';
+import { getInitials } from '../utils/helpers';
 import './Seat.css';
 
 const Seat = ({ rider, onDrop, busId, rowIndex, benchIndex, seatIndex }) => {
@@ -31,7 +32,7 @@ const Seat = ({ rider, onDrop, busId, rowIndex, benchIndex, seatIndex }) => {
       className={`seat ${rider ? 'occupied' : 'empty'} ${isOver ? 'hover' : ''} ${isDragging ? 'dragging' : ''}`}
       title={rider || 'Empty seat'}
     >
-      {rider && <span className="rider-name">{rider}</span>}
+      {rider && <span className="rider-name">{getInitials(rider)}</span>}
     </div>
   );
 };

@@ -59,6 +59,34 @@
   background-color: #45a049;
 }
 
+.file-upload-section {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #ddd;
+}
+
+.file-upload-label {
+  display: block;
+  text-align: center;
+  padding: 10px;
+  background-color: #2196F3;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+  margin-bottom: 5px;
+}
+
+.file-upload-label:hover {
+  background-color: #0b7dda;
+}
+
+.file-upload-input {
+  display: none;
+}
+
 .riders-list {
   display: flex;
   flex-direction: column;

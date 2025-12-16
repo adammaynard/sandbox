@@ -148,6 +148,56 @@ function App() {
     window.print();
   };
 
+  const handleDownloadState = () => {
+    const state = {
+      riders,
+      bus1,
+      bus2,
+      timestamp: new Date().toISOString(),
+    };
+
+    const dataStr = JSON.stringify(state, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `bus-seating-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleUploadState = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const state = JSON.parse(event.target.result);
+
+        // Validate state structure
+        if (!state.riders || !state.bus1 || !state.bus2) {
+          alert('Invalid state file format!');
+          return;
+        }
+
+        setRiders(state.riders);
+        setBus1(state.bus1);
+        setBus2(state.bus2);
+        alert(`Seating arrangement loaded from ${new Date(state.timestamp).toLocaleString()}`);
+      } catch (error) {
+        alert('Error reading state file. Please ensure it is a valid JSON file.');
+      }
+
+      // Reset the file input
+      e.target.value = '';
+    };
+
+    reader.readAsText(file);
+  };
+
   const countAvailableSeats = (bus) => {
     let count = 0;
     bus.forEach((row) => {
@@ -170,11 +220,24 @@ function App() {
           <h1>Bus Seating Manager</h1>
           <div className="controls">
             <button className="control-btn save-btn" onClick={handleSaveState}>
-              💾 Save State
+              💾 Save to Browser
             </button>
             <button className="control-btn load-btn" onClick={handleLoadState}>
-              📂 Load State
+              📂 Load from Browser
             </button>
+            <button className="control-btn download-btn" onClick={handleDownloadState}>
+              ⬇️ Download State
+            </button>
+            <label htmlFor="upload-state" className="control-btn upload-btn">
+              ⬆️ Upload State
+            </label>
+            <input
+              id="upload-state"
+              type="file"
+              accept=".json"
+              onChange={handleUploadState}
+              style={{ display: 'none' }}
+            />
             <button className="control-btn print-btn" onClick={handlePrint}>
               🖨️ Print Seating Chart
             </button>

@@ -70,6 +70,24 @@
   background-color: #0b7dda;
 }
 
+.download-btn {
+  background-color: #9C27B0;
+  color: white;
+}
+
+.download-btn:hover {
+  background-color: #7B1FA2;
+}
+
+.upload-btn {
+  background-color: #FF5722;
+  color: white;
+}
+
+.upload-btn:hover {
+  background-color: #E64A19;
+}
+
 .print-btn {
   background-color: #FF9800;
   color: white;

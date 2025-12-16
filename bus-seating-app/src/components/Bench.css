@@ -1,0 +1,7 @@
+.bench {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background-color: #D3D3D3;
+  border-radius: 6px;
+}

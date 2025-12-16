@@ -9,7 +9,7 @@ const RiderItem = ({ rider, onRemove }) => {
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
-  }));
+  }), [rider]);
 
   return (
     <div
@@ -74,9 +74,9 @@ const RidersList = ({ riders, onAddRider, onRemoveRider, onReturnRider }) => {
         {riders.length === 0 ? (
           <p className="empty-message">No riders yet. Add some above!</p>
         ) : (
-          riders.map((rider, index) => (
+          riders.map((rider) => (
             <RiderItem
-              key={index}
+              key={rider}
               rider={rider}
               onRemove={onRemoveRider}
             />

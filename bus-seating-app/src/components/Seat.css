@@ -25,6 +25,12 @@
   background-color: #FFB6C1;
   border-color: #FF69B4;
   color: #333;
+  cursor: move;
+}
+
+.seat.occupied.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
 }
 
 .seat.hover {

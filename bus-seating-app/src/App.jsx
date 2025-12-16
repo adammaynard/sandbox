@@ -101,7 +101,22 @@ function App() {
       return cleaned;
     });
 
-    // Riders stay in the list even when assigned to seats
+    // Remove rider from the list when assigned to a seat
+    setRiders((prevRiders) => prevRiders.filter((r) => r !== riderName));
+  };
+
+  const handleReturnRider = (riderName) => {
+    // Add rider back to the list
+    setRiders((prevRiders) => {
+      if (!prevRiders.includes(riderName)) {
+        return [...prevRiders, riderName];
+      }
+      return prevRiders;
+    });
+
+    // Remove rider from both buses
+    setBus1((prevBus) => removeRiderFromBus(prevBus, riderName));
+    setBus2((prevBus) => removeRiderFromBus(prevBus, riderName));
   };
 
   const countAvailableSeats = (bus) => {
@@ -128,6 +143,7 @@ function App() {
             riders={riders}
             onAddRider={handleAddRider}
             onRemoveRider={handleRemoveRider}
+            onReturnRider={handleReturnRider}
           />
           <div className="buses-container">
             <Bus

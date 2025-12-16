@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useDrag } from 'react-dnd';
+import { useDrag, useDrop } from 'react-dnd';
 import './RidersList.css';
 
 const RiderItem = ({ rider, onRemove }) => {
@@ -28,8 +28,21 @@ const RiderItem = ({ rider, onRemove }) => {
   );
 };
 
-const RidersList = ({ riders, onAddRider, onRemoveRider }) => {
+const RidersList = ({ riders, onAddRider, onRemoveRider, onReturnRider }) => {
   const [newRiderName, setNewRiderName] = useState('');
+
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: 'RIDER',
+    drop: (item) => {
+      // Only add back if not already in the list
+      if (!riders.includes(item.rider)) {
+        onReturnRider(item.rider);
+      }
+    },
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+    }),
+  }), [riders, onReturnRider]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -40,7 +53,10 @@ const RidersList = ({ riders, onAddRider, onRemoveRider }) => {
   };
 
   return (
-    <div className="riders-list-container">
+    <div
+      ref={drop}
+      className={`riders-list-container ${isOver ? 'drop-zone-active' : ''}`}
+    >
       <h3>Bus Riders</h3>
       <form onSubmit={handleSubmit} className="add-rider-form">
         <input
@@ -67,6 +83,7 @@ const RidersList = ({ riders, onAddRider, onRemoveRider }) => {
           ))
         )}
       </div>
+      {isOver && <div className="drop-indicator">Drop here to unassign</div>}
     </div>
   );
 };

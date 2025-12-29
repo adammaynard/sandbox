@@ -1,10 +1,13 @@
 import './PrintView.css';
 
-const PrintView = ({ buses, config }) => {
-  const seatsPerBench = config.seatsPerBench;
-  const totalSeatsPerBus = config.rowsPerBus * 2 * seatsPerBench;
+const PrintView = ({ buses, busConfigs }) => {
 
-  const renderBusPrint = (bus, busNumber) => {
+  const renderBusPrint = (bus, busIndex) => {
+    const busNumber = busIndex + 1;
+    const busConfig = busConfigs[busIndex];
+    const seatsPerBench = busConfig.seatsPerBench;
+    const totalSeatsPerBus = busConfig.rows * 2 * seatsPerBench;
+
     return (
       <div className="print-bus-page">
         <h1 className="print-title">Bus {busNumber} - Seating Chart</h1>
@@ -68,7 +71,7 @@ const PrintView = ({ buses, config }) => {
 
   return (
     <div className="print-only">
-      {buses.map((bus, index) => renderBusPrint(bus, index + 1))}
+      {buses.map((bus, index) => renderBusPrint(bus, index))}
     </div>
   );
 };

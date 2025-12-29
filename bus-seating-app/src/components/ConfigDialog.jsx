@@ -1,30 +1,47 @@
 import { useState } from 'react';
 import './ConfigDialog.css';
 
-const ConfigDialog = ({ isOpen, onClose, currentConfig, onSave }) => {
-  const [numBuses, setNumBuses] = useState(currentConfig.numBuses);
-  const [rowsPerBus, setRowsPerBus] = useState(currentConfig.rowsPerBus);
-  const [seatsPerBench, setSeatsPerBench] = useState(currentConfig.seatsPerBench);
+const ConfigDialog = ({ isOpen, onClose, currentBusConfigs, onSave }) => {
+  const [busConfigs, setBusConfigs] = useState(currentBusConfigs);
+
+  const handleBusConfigChange = (index, field, value) => {
+    const newConfigs = [...busConfigs];
+    newConfigs[index] = {
+      ...newConfigs[index],
+      [field]: parseInt(value) || 1,
+    };
+    setBusConfigs(newConfigs);
+  };
+
+  const handleAddBus = () => {
+    setBusConfigs([...busConfigs, { rows: 14, seatsPerBench: 2 }]);
+  };
+
+  const handleRemoveBus = (index) => {
+    if (busConfigs.length === 1) {
+      alert('You must have at least one bus');
+      return;
+    }
+    const newConfigs = busConfigs.filter((_, i) => i !== index);
+    setBusConfigs(newConfigs);
+  };
 
   const handleSave = () => {
     // Validate inputs
-    if (numBuses < 1 || numBuses > 10) {
-      alert('Number of buses must be between 1 and 10');
-      return;
-    }
-    if (rowsPerBus < 1 || rowsPerBus > 30) {
-      alert('Rows per bus must be between 1 and 30');
-      return;
-    }
-    if (seatsPerBench < 1 || seatsPerBench > 4) {
-      alert('Seats per bench must be between 1 and 4');
-      return;
+    for (let i = 0; i < busConfigs.length; i++) {
+      const config = busConfigs[i];
+      if (config.rows < 1 || config.rows > 30) {
+        alert(`Bus ${i + 1}: Rows must be between 1 and 30`);
+        return;
+      }
+      if (config.seatsPerBench < 1 || config.seatsPerBench > 4) {
+        alert(`Bus ${i + 1}: Seats per bench must be between 1 and 4`);
+        return;
+      }
     }
 
-    const hasChanges =
-      numBuses !== currentConfig.numBuses ||
-      rowsPerBus !== currentConfig.rowsPerBus ||
-      seatsPerBench !== currentConfig.seatsPerBench;
+    // Check if configuration changed
+    const hasChanges = JSON.stringify(busConfigs) !== JSON.stringify(currentBusConfigs);
 
     if (hasChanges) {
       const confirmMessage =
@@ -34,71 +51,86 @@ const ConfigDialog = ({ isOpen, onClose, currentConfig, onSave }) => {
       }
     }
 
-    onSave({ numBuses, rowsPerBus, seatsPerBench });
+    onSave(busConfigs);
     onClose();
   };
 
   const handleCancel = () => {
     // Reset to current values
-    setNumBuses(currentConfig.numBuses);
-    setRowsPerBus(currentConfig.rowsPerBus);
-    setSeatsPerBench(currentConfig.seatsPerBench);
+    setBusConfigs(currentBusConfigs);
     onClose();
   };
 
   if (!isOpen) return null;
 
-  const totalSeatsPerBus = rowsPerBus * 2 * seatsPerBench;
+  const totalSeats = busConfigs.reduce(
+    (sum, config) => sum + config.rows * 2 * config.seatsPerBench,
+    0
+  );
 
   return (
     <div className="dialog-overlay" onClick={handleCancel}>
-      <div className="dialog-content" onClick={(e) => e.stopPropagation()}>
+      <div className="dialog-content bus-config-dialog" onClick={(e) => e.stopPropagation()}>
         <h2>Bus Configuration</h2>
 
         <div className="config-form">
-          <div className="config-field">
-            <label htmlFor="numBuses">Number of Buses:</label>
-            <input
-              id="numBuses"
-              type="number"
-              min="1"
-              max="10"
-              value={numBuses}
-              onChange={(e) => setNumBuses(parseInt(e.target.value) || 1)}
-            />
-            <span className="field-hint">1-10 buses</span>
+          <div className="bus-configs-list">
+            {busConfigs.map((config, index) => (
+              <div key={index} className="bus-config-item">
+                <div className="bus-config-header">
+                  <h3>Bus {index + 1}</h3>
+                  <button
+                    className="remove-bus-btn"
+                    onClick={() => handleRemoveBus(index)}
+                    title="Remove this bus"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="bus-config-fields">
+                  <div className="config-field-inline">
+                    <label>Rows:</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={config.rows}
+                      onChange={(e) => handleBusConfigChange(index, 'rows', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="config-field-inline">
+                    <label>Seats/Bench:</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="4"
+                      value={config.seatsPerBench}
+                      onChange={(e) =>
+                        handleBusConfigChange(index, 'seatsPerBench', e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div className="bus-total-seats">
+                    Total: {config.rows * 2 * config.seatsPerBench} seats
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
-          <div className="config-field">
-            <label htmlFor="rowsPerBus">Rows per Bus:</label>
-            <input
-              id="rowsPerBus"
-              type="number"
-              min="1"
-              max="30"
-              value={rowsPerBus}
-              onChange={(e) => setRowsPerBus(parseInt(e.target.value) || 1)}
-            />
-            <span className="field-hint">1-30 rows (always 2 benches per row)</span>
-          </div>
-
-          <div className="config-field">
-            <label htmlFor="seatsPerBench">Seats per Bench:</label>
-            <input
-              id="seatsPerBench"
-              type="number"
-              min="1"
-              max="4"
-              value={seatsPerBench}
-              onChange={(e) => setSeatsPerBench(parseInt(e.target.value) || 1)}
-            />
-            <span className="field-hint">1-4 seats</span>
-          </div>
+          <button className="add-bus-btn" onClick={handleAddBus}>
+            + Add Bus
+          </button>
 
           <div className="config-summary">
-            <strong>Total seats per bus:</strong> {totalSeatsPerBus}
+            <strong>Total buses:</strong> {busConfigs.length}
             <br />
-            <strong>Total seats across all buses:</strong> {totalSeatsPerBus * numBuses}
+            <strong>Total seats across all buses:</strong> {totalSeats}
+            <br />
+            <span className="field-hint">Always 2 benches per row (left and right)</span>
           </div>
         </div>
 

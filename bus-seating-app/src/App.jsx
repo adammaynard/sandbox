@@ -7,21 +7,20 @@ import PrintView from './components/PrintView';
 import ConfigDialog from './components/ConfigDialog';
 import './App.css';
 
-const DEFAULT_CONFIG = {
-  numBuses: 2,
-  rowsPerBus: 14,
-  seatsPerBench: 2,
-};
+const DEFAULT_BUS_CONFIGS = [
+  { rows: 14, seatsPerBench: 2 },
+  { rows: 14, seatsPerBench: 2 },
+];
 
 const BENCHES_PER_ROW = 2; // This remains constant
 
 function App() {
-  const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [busConfigs, setBusConfigs] = useState(DEFAULT_BUS_CONFIGS);
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
 
-  // Initialize empty buses based on configuration
-  const createEmptyBus = (rowsPerBus, seatsPerBench) =>
-    Array(rowsPerBus)
+  // Initialize empty bus based on configuration
+  const createEmptyBus = (rows, seatsPerBench) =>
+    Array(rows)
       .fill(null)
       .map(() =>
         Array(BENCHES_PER_ROW)
@@ -29,13 +28,11 @@ function App() {
           .map(() => Array(seatsPerBench).fill(null))
       );
 
-  const createEmptyBuses = (numBuses, rowsPerBus, seatsPerBench) =>
-    Array(numBuses)
-      .fill(null)
-      .map(() => createEmptyBus(rowsPerBus, seatsPerBench));
+  const createEmptyBusesFromConfigs = (configs) =>
+    configs.map((config) => createEmptyBus(config.rows, config.seatsPerBench));
 
   const [buses, setBuses] = useState(() =>
-    createEmptyBuses(config.numBuses, config.rowsPerBus, config.seatsPerBench)
+    createEmptyBusesFromConfigs(busConfigs)
   );
   const [riders, setRiders] = useState([
     'Alice Johnson',
@@ -115,32 +112,32 @@ function App() {
     );
   };
 
-  const handleConfigSave = (newConfig) => {
-    setConfig(newConfig);
-    // Reset all buses with new configuration
-    setBuses(createEmptyBuses(newConfig.numBuses, newConfig.rowsPerBus, newConfig.seatsPerBench));
-    // Return all riders to the list
-    setBuses((prevBuses) => {
-      const allRiders = [];
-      prevBuses.forEach((bus) => {
-        bus.forEach((row) => {
-          row.forEach((bench) => {
-            bench.forEach((seat) => {
-              if (seat) allRiders.push(seat);
-            });
+  const handleConfigSave = (newBusConfigs) => {
+    // Collect all riders from current buses first
+    const allRiders = [];
+    buses.forEach((bus) => {
+      bus.forEach((row) => {
+        row.forEach((bench) => {
+          bench.forEach((seat) => {
+            if (seat) allRiders.push(seat);
           });
         });
       });
-      if (allRiders.length > 0) {
-        setRiders((prev) => [...prev, ...allRiders]);
-      }
-      return createEmptyBuses(newConfig.numBuses, newConfig.rowsPerBus, newConfig.seatsPerBench);
     });
+
+    // Update config and reset buses
+    setBusConfigs(newBusConfigs);
+    setBuses(createEmptyBusesFromConfigs(newBusConfigs));
+
+    // Return all riders to the list
+    if (allRiders.length > 0) {
+      setRiders((prev) => [...prev, ...allRiders]);
+    }
   };
 
   const handleSaveState = () => {
     const state = {
-      config,
+      busConfigs,
       riders,
       buses,
       timestamp: new Date().toISOString(),
@@ -154,9 +151,19 @@ function App() {
     if (savedState) {
       const state = JSON.parse(savedState);
 
-      // Load configuration if available
-      if (state.config) {
-        setConfig(state.config);
+      // Handle both old and new config formats
+      if (state.busConfigs) {
+        setBusConfigs(state.busConfigs);
+      } else if (state.config) {
+        // Convert old format to new format
+        const oldConfig = state.config;
+        const newConfigs = Array(oldConfig.numBuses || 2)
+          .fill(null)
+          .map(() => ({
+            rows: oldConfig.rowsPerBus || 14,
+            seatsPerBench: oldConfig.seatsPerBench || 2,
+          }));
+        setBusConfigs(newConfigs);
       }
 
       setRiders(state.riders);
@@ -173,7 +180,7 @@ function App() {
 
   const handleDownloadState = () => {
     const state = {
-      config,
+      busConfigs,
       riders,
       buses,
       timestamp: new Date().toISOString(),
@@ -206,9 +213,19 @@ function App() {
           return;
         }
 
-        // Load configuration if available
-        if (state.config) {
-          setConfig(state.config);
+        // Handle both old and new config formats
+        if (state.busConfigs) {
+          setBusConfigs(state.busConfigs);
+        } else if (state.config) {
+          // Convert old format to new format
+          const oldConfig = state.config;
+          const newConfigs = Array(oldConfig.numBuses || 2)
+            .fill(null)
+            .map(() => ({
+              rows: oldConfig.rowsPerBus || 14,
+              seatsPerBench: oldConfig.seatsPerBench || 2,
+            }));
+          setBusConfigs(newConfigs);
         }
 
         setRiders(state.riders);
@@ -236,8 +253,6 @@ function App() {
     });
     return count;
   };
-
-  const totalSeatsPerBus = config.rowsPerBus * BENCHES_PER_ROW * config.seatsPerBench;
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -282,26 +297,30 @@ function App() {
               onReturnRider={handleReturnRider}
             />
             <div className="buses-container">
-              {buses.map((bus, busIndex) => (
-                <Bus
-                  key={busIndex}
-                  busId={busIndex + 1}
-                  rows={bus}
-                  onDrop={(riderName, _, rowIndex, benchIndex, seatIndex) =>
-                    handleDrop(riderName, busIndex, rowIndex, benchIndex, seatIndex)
-                  }
-                  availableSeats={countAvailableSeats(bus)}
-                  totalSeats={totalSeatsPerBus}
-                />
-              ))}
+              {buses.map((bus, busIndex) => {
+                const busConfig = busConfigs[busIndex];
+                const totalSeats = busConfig.rows * BENCHES_PER_ROW * busConfig.seatsPerBench;
+                return (
+                  <Bus
+                    key={busIndex}
+                    busId={busIndex + 1}
+                    rows={bus}
+                    onDrop={(riderName, _, rowIndex, benchIndex, seatIndex) =>
+                      handleDrop(riderName, busIndex, rowIndex, benchIndex, seatIndex)
+                    }
+                    availableSeats={countAvailableSeats(bus)}
+                    totalSeats={totalSeats}
+                  />
+                );
+              })}
             </div>
           </div>
         </div>
-        <PrintView buses={buses} config={config} />
+        <PrintView buses={buses} busConfigs={busConfigs} />
         <ConfigDialog
           isOpen={isConfigDialogOpen}
           onClose={() => setIsConfigDialogOpen(false)}
-          currentConfig={config}
+          currentBusConfigs={busConfigs}
           onSave={handleConfigSave}
         />
       </div>

@@ -4,26 +4,39 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import Bus from './components/Bus';
 import RidersList from './components/RidersList';
 import PrintView from './components/PrintView';
+import ConfigDialog from './components/ConfigDialog';
 import './App.css';
 
-const ROWS_PER_BUS = 14;
-const BENCHES_PER_ROW = 2;
-const SEATS_PER_BENCH = 2;
-const TOTAL_SEATS_PER_BUS = ROWS_PER_BUS * BENCHES_PER_ROW * SEATS_PER_BENCH;
+const DEFAULT_CONFIG = {
+  numBuses: 2,
+  rowsPerBus: 14,
+  seatsPerBench: 2,
+};
+
+const BENCHES_PER_ROW = 2; // This remains constant
 
 function App() {
-  // Initialize empty buses (14 rows, 2 benches per row, 2 seats per bench)
-  const createEmptyBus = () =>
-    Array(ROWS_PER_BUS)
+  const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
+
+  // Initialize empty buses based on configuration
+  const createEmptyBus = (rowsPerBus, seatsPerBench) =>
+    Array(rowsPerBus)
       .fill(null)
       .map(() =>
         Array(BENCHES_PER_ROW)
           .fill(null)
-          .map(() => Array(SEATS_PER_BENCH).fill(null))
+          .map(() => Array(seatsPerBench).fill(null))
       );
 
-  const [bus1, setBus1] = useState(createEmptyBus());
-  const [bus2, setBus2] = useState(createEmptyBus());
+  const createEmptyBuses = (numBuses, rowsPerBus, seatsPerBench) =>
+    Array(numBuses)
+      .fill(null)
+      .map(() => createEmptyBus(rowsPerBus, seatsPerBench));
+
+  const [buses, setBuses] = useState(() =>
+    createEmptyBuses(config.numBuses, config.rowsPerBus, config.seatsPerBench)
+  );
   const [riders, setRiders] = useState([
     'Alice Johnson',
     'Bob Smith',
@@ -48,9 +61,10 @@ function App() {
     // Remove from riders list
     setRiders((prevRiders) => prevRiders.filter((r) => r !== name));
 
-    // Remove from both buses
-    setBus1((prevBus) => removeRiderFromBus(prevBus, name));
-    setBus2((prevBus) => removeRiderFromBus(prevBus, name));
+    // Remove from all buses
+    setBuses((prevBuses) =>
+      prevBuses.map((bus) => removeRiderFromBus(bus, name))
+    );
   };
 
   const removeRiderFromBus = (bus, riderName) => {
@@ -61,45 +75,25 @@ function App() {
     );
   };
 
-  const handleDrop = (riderName, busId, rowIndex, benchIndex, seatIndex) => {
-    // Update bus 1
-    setBus1((prevBus1) => {
-      // Check if target seat is on bus 1 and is occupied
-      if (busId === 1 && prevBus1[rowIndex][benchIndex][seatIndex]) {
-        return prevBus1; // Seat occupied, no change
+  const handleDrop = (riderName, busIndex, rowIndex, benchIndex, seatIndex) => {
+    setBuses((prevBuses) => {
+      // Check if target seat is occupied
+      if (prevBuses[busIndex][rowIndex][benchIndex][seatIndex]) {
+        return prevBuses; // Seat occupied, no change
       }
 
-      // Remove rider from bus 1 (if they're already seated there)
-      const cleaned = removeRiderFromBus(prevBus1, riderName);
+      // Remove rider from all buses first
+      const cleanedBuses = prevBuses.map((bus) => removeRiderFromBus(bus, riderName));
 
-      // If dropping on bus 1, add rider to the target seat
-      if (busId === 1) {
-        const updated = cleaned.map(row => row.map(bench => [...bench]));
-        updated[rowIndex][benchIndex][seatIndex] = riderName;
-        return updated;
-      }
+      // Update the specific bus with the new rider
+      const updatedBuses = [...cleanedBuses];
+      const updatedBus = cleanedBuses[busIndex].map((row) =>
+        row.map((bench) => [...bench])
+      );
+      updatedBus[rowIndex][benchIndex][seatIndex] = riderName;
+      updatedBuses[busIndex] = updatedBus;
 
-      return cleaned;
-    });
-
-    // Update bus 2
-    setBus2((prevBus2) => {
-      // Check if target seat is on bus 2 and is occupied
-      if (busId === 2 && prevBus2[rowIndex][benchIndex][seatIndex]) {
-        return prevBus2; // Seat occupied, no change
-      }
-
-      // Remove rider from bus 2 (if they're already seated there)
-      const cleaned = removeRiderFromBus(prevBus2, riderName);
-
-      // If dropping on bus 2, add rider to the target seat
-      if (busId === 2) {
-        const updated = cleaned.map(row => row.map(bench => [...bench]));
-        updated[rowIndex][benchIndex][seatIndex] = riderName;
-        return updated;
-      }
-
-      return cleaned;
+      return updatedBuses;
     });
 
     // Remove rider from the list when assigned to a seat
@@ -115,16 +109,40 @@ function App() {
       return prevRiders;
     });
 
-    // Remove rider from both buses
-    setBus1((prevBus) => removeRiderFromBus(prevBus, riderName));
-    setBus2((prevBus) => removeRiderFromBus(prevBus, riderName));
+    // Remove rider from all buses
+    setBuses((prevBuses) =>
+      prevBuses.map((bus) => removeRiderFromBus(bus, riderName))
+    );
+  };
+
+  const handleConfigSave = (newConfig) => {
+    setConfig(newConfig);
+    // Reset all buses with new configuration
+    setBuses(createEmptyBuses(newConfig.numBuses, newConfig.rowsPerBus, newConfig.seatsPerBench));
+    // Return all riders to the list
+    setBuses((prevBuses) => {
+      const allRiders = [];
+      prevBuses.forEach((bus) => {
+        bus.forEach((row) => {
+          row.forEach((bench) => {
+            bench.forEach((seat) => {
+              if (seat) allRiders.push(seat);
+            });
+          });
+        });
+      });
+      if (allRiders.length > 0) {
+        setRiders((prev) => [...prev, ...allRiders]);
+      }
+      return createEmptyBuses(newConfig.numBuses, newConfig.rowsPerBus, newConfig.seatsPerBench);
+    });
   };
 
   const handleSaveState = () => {
     const state = {
+      config,
       riders,
-      bus1,
-      bus2,
+      buses,
       timestamp: new Date().toISOString(),
     };
     localStorage.setItem('busSeatingState', JSON.stringify(state));
@@ -135,9 +153,14 @@ function App() {
     const savedState = localStorage.getItem('busSeatingState');
     if (savedState) {
       const state = JSON.parse(savedState);
+
+      // Load configuration if available
+      if (state.config) {
+        setConfig(state.config);
+      }
+
       setRiders(state.riders);
-      setBus1(state.bus1);
-      setBus2(state.bus2);
+      setBuses(state.buses);
       alert(`Seating arrangement loaded from ${new Date(state.timestamp).toLocaleString()}`);
     } else {
       alert('No saved state found!');
@@ -150,9 +173,9 @@ function App() {
 
   const handleDownloadState = () => {
     const state = {
+      config,
       riders,
-      bus1,
-      bus2,
+      buses,
       timestamp: new Date().toISOString(),
     };
 
@@ -178,14 +201,18 @@ function App() {
         const state = JSON.parse(event.target.result);
 
         // Validate state structure
-        if (!state.riders || !state.bus1 || !state.bus2) {
+        if (!state.riders || !state.buses) {
           alert('Invalid state file format!');
           return;
         }
 
+        // Load configuration if available
+        if (state.config) {
+          setConfig(state.config);
+        }
+
         setRiders(state.riders);
-        setBus1(state.bus1);
-        setBus2(state.bus2);
+        setBuses(state.buses);
         alert(`Seating arrangement loaded from ${new Date(state.timestamp).toLocaleString()}`);
       } catch (error) {
         alert('Error reading state file. Please ensure it is a valid JSON file.');
@@ -210,8 +237,7 @@ function App() {
     return count;
   };
 
-  const bus1Available = countAvailableSeats(bus1);
-  const bus2Available = countAvailableSeats(bus2);
+  const totalSeatsPerBus = config.rowsPerBus * BENCHES_PER_ROW * config.seatsPerBench;
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -222,6 +248,9 @@ function App() {
             <h1>Bus Seating Manager</h1>
           </div>
           <div className="controls">
+            <button className="control-btn config-btn" onClick={() => setIsConfigDialogOpen(true)}>
+              ⚙️ Configuration
+            </button>
             <button className="control-btn save-btn" onClick={handleSaveState}>
               💾 Save to Browser
             </button>
@@ -253,24 +282,28 @@ function App() {
               onReturnRider={handleReturnRider}
             />
             <div className="buses-container">
-              <Bus
-                busId={1}
-                rows={bus1}
-                onDrop={handleDrop}
-                availableSeats={bus1Available}
-                totalSeats={TOTAL_SEATS_PER_BUS}
-              />
-              <Bus
-                busId={2}
-                rows={bus2}
-                onDrop={handleDrop}
-                availableSeats={bus2Available}
-                totalSeats={TOTAL_SEATS_PER_BUS}
-              />
+              {buses.map((bus, busIndex) => (
+                <Bus
+                  key={busIndex}
+                  busId={busIndex + 1}
+                  rows={bus}
+                  onDrop={(riderName, _, rowIndex, benchIndex, seatIndex) =>
+                    handleDrop(riderName, busIndex, rowIndex, benchIndex, seatIndex)
+                  }
+                  availableSeats={countAvailableSeats(bus)}
+                  totalSeats={totalSeatsPerBus}
+                />
+              ))}
             </div>
           </div>
         </div>
-        <PrintView bus1={bus1} bus2={bus2} />
+        <PrintView buses={buses} config={config} />
+        <ConfigDialog
+          isOpen={isConfigDialogOpen}
+          onClose={() => setIsConfigDialogOpen(false)}
+          currentConfig={config}
+          onSave={handleConfigSave}
+        />
       </div>
     </DndProvider>
   );

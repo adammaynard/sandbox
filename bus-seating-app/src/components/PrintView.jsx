@@ -1,6 +1,9 @@
 import './PrintView.css';
 
-const PrintView = ({ bus1, bus2 }) => {
+const PrintView = ({ buses, config }) => {
+  const seatsPerBench = config.seatsPerBench;
+  const totalSeatsPerBus = config.rowsPerBus * 2 * seatsPerBench;
+
   const renderBusPrint = (bus, busNumber) => {
     return (
       <div className="print-bus-page">
@@ -14,20 +17,28 @@ const PrintView = ({ bus1, bus2 }) => {
             <thead>
               <tr>
                 <th>Row</th>
-                <th colSpan="2">Left Bench</th>
+                <th colSpan={seatsPerBench}>Left Bench</th>
                 <th className="aisle">Aisle</th>
-                <th colSpan="2">Right Bench</th>
+                <th colSpan={seatsPerBench}>Right Bench</th>
               </tr>
             </thead>
             <tbody>
               {bus.map((row, rowIndex) => (
                 <tr key={rowIndex}>
                   <td className="row-number">{rowIndex + 1}</td>
-                  <td className="seat-cell">{row[0][0] || '—'}</td>
-                  <td className="seat-cell">{row[0][1] || '—'}</td>
+                  {/* Left bench seats */}
+                  {row[0].map((seat, seatIndex) => (
+                    <td key={`left-${seatIndex}`} className="seat-cell">
+                      {seat || '—'}
+                    </td>
+                  ))}
                   <td className="aisle"></td>
-                  <td className="seat-cell">{row[1][0] || '—'}</td>
-                  <td className="seat-cell">{row[1][1] || '—'}</td>
+                  {/* Right bench seats */}
+                  {row[1].map((seat, seatIndex) => (
+                    <td key={`right-${seatIndex}`} className="seat-cell">
+                      {seat || '—'}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -35,9 +46,9 @@ const PrintView = ({ bus1, bus2 }) => {
           <div className="print-bus-back">BACK</div>
         </div>
         <div className="print-summary">
-          <strong>Total Seats:</strong> 56 |
+          <strong>Total Seats:</strong> {totalSeatsPerBus} |
           <strong> Occupied:</strong> {countOccupiedSeats(bus)} |
-          <strong> Available:</strong> {56 - countOccupiedSeats(bus)}
+          <strong> Available:</strong> {totalSeatsPerBus - countOccupiedSeats(bus)}
         </div>
       </div>
     );
@@ -57,8 +68,7 @@ const PrintView = ({ bus1, bus2 }) => {
 
   return (
     <div className="print-only">
-      {renderBusPrint(bus1, 1)}
-      {renderBusPrint(bus2, 2)}
+      {buses.map((bus, index) => renderBusPrint(bus, index + 1))}
     </div>
   );
 };

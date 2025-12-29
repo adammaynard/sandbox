@@ -76,6 +76,15 @@
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
+.config-btn {
+  background-color: #607D8B;
+  color: white;
+}
+
+.config-btn:hover {
+  background-color: #546E7A;
+}
+
 .save-btn {
   background-color: #4CAF50;
   color: white;
